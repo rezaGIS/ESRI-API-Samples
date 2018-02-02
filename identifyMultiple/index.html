@@ -1,0 +1,124 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="../../favicon.ico">
+    <title>Identify Multiple Sample</title>
+    <!-- Bootstrap core CSS/JS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+    <!-- ESRI Javascript API 3.18-->
+    <link rel="stylesheet" href="https://js.arcgis.com/3.18/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="https://js.arcgis.com/3.18/esri/css/esri.css">
+    <link rel="stylesheet" href="https://js.arcgis.com/3.18/dgrid/css/dgrid.css">
+    <style>
+        html, body, #mapDiv {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+    <script src="https://js.arcgis.com/3.18/"></script>
+    <script>
+        // Variables
+        var map;
+        var infoTemplate;
+        var identifyOps;
+        // Mapservice to query
+        var opsURL = "https://gis.colorado.gov/public/rest/services/CDLE/OPS_Events/MapServer";
+        // Different templates for popup / info template
+        var infoTemplateTitle = "<b>Release Event</b>";
+        var costisURL = "https://opus.cdle.state.co.us/OIS2000/event.asp?h_id=" + "${Event_ID}"; // dynamic link based on ID, creates link to another site
+        var pdfURL = "https://gis.colorado.gov/appesri/OpenPetroleum_PDF/Event" + "${Event_ID}" + "_closuresummary.pdf";
+        var openTemplateData = "<b>Site Name:</b> ${Site_Name}</br>" + "<b>Event ID:</b> ${Event_ID}</br>" + "<b>Facility ID:</b> ${Facility_ID}</br>" +
+                        "<b>Status:</b> ${Status}</br>" + "<b>Type:</b> ${Status_Type}</br>" + "<b>Address:</b> ${Address}</br>" +
+                        "<b>City/State:</b> ${City_State_Zip}</br>" + "<b>Release Date:</b> ${Date_of_Release:DateFormat(selector: 'date', fullYear: true)}</br>" +
+                        "<b>Contact:</b> ${OPS_Contact_Name}</br>" + "<b>Phone:</b> ${Phone}</br>" + "<b>Email:</b> ${Email}</br>" +
+                        "</br><a href=" + costisURL + " target='_blank'>View COSTIS</a> </br>";
+        var closedTemplateData = "<b>Site Name:</b> ${Site_Name}</br>" + "<b>Event ID:</b> ${Event_ID}</br>" + "<b>Facility ID:</b> ${Facility_ID}</br>" +
+                        "<b>Status:</b> ${Status}</br>" + "<b>Type:</b> ${Status_Type}</br>" + "<b>Address:</b> ${Address}</br>" +
+                        "<b>City/State:</b> ${City_State_Zip}</br>" + "<b>Release Date:</b> ${Date_of_Release:DateFormat(selector: 'date', fullYear: true)}</br>" +
+                        "<b>Closure Date:</b> ${Closure_Date:DateFormat(selector: 'date', fullYear: true)}</br>" + "<b>Contact:</b> ${OPS_Contact_Name}</br>" + "<b>Phone:</b> ${Phone}</br>" + "<b>Email:</b> ${Email}</br>" +
+                        "</br><a href=" + costisURL + " target='_blank'>View COSTIS</a> </br>";
+        var tier4TemplateData = closedTemplateData + "<a href=" + pdfURL + " target='_blank'>View Closure Summary</a> </br>";
+        
+        require(["esri/map",
+            "esri/layers/ArcGISDynamicMapServiceLayer",
+            "esri/geometry/Extent", "esri/InfoTemplate",
+            "esri/tasks/IdentifyParameters",
+            "esri/tasks/IdentifyTask",
+            "dojo/dom-construct",
+            "dojo/_base/array",
+            "dojo/domReady!"],
+        function (Map,
+            ArcGISDynamicMapServiceLayer,
+            Extent,
+            InfoTemplate,
+            IdentifyParameters,
+            IdentifyTask,
+            domConstruct,
+            arrayUtils) {
+            // Set colorado extent for map
+            var coloradoExtent = new Extent(-109.205, 36.944, -101.919, 41.039);
+            // Create map object
+            map = new Map("mapDiv", {
+                basemap: "topo",  //For full list of pre-defined basemaps, navigate to http://arcg.is/1JVo6Wd
+                extent: coloradoExtent,
+                zoom: 8
+            });
+            // Create mapservice object
+            var opsMap = new ArcGISDynamicMapServiceLayer(opsURL, {
+                outFields: ["*"]
+            });
+            // Add mapservice object
+            map.addLayers([opsMap]);
+            // Add mapservice object
+            map.on("click", function identify(evt) {
+                //Set Identify parameters
+                var identifyIdsTemp = opsMap.visibleLayers;
+                identifyOpsParams = new IdentifyParameters();
+                identifyOps = new IdentifyTask(opsURL);
+                identifyOpsParams.layerIds = [identifyIdsTemp];
+                identifyOpsParams.mapExtent = map.extent;
+                identifyOpsParams.tolerance = 1;
+                identifyOpsParams.geometry = evt.mapPoint;
+                identifyOpsParams.returnGeometry = true;
+                //Execute Identify Task
+                var deferedIdentify = identifyOps.execute(identifyOpsParams).addCallback(function (response) {
+                    return arrayUtils.map(response, function (results) {
+                        var feature = results.feature;
+                        var layerName = results.layerName;
+                        // Filter results and set info template with proper template based on layerName result
+                        if (layerName === "Open Events") {
+                            var openEventsTemplate = new InfoTemplate("Open Event", openTemplateData);
+                            feature.setInfoTemplate(openEventsTemplate);
+                        }
+                        if (layerName === "Tier 1" || layerName === "Tier 2" || layerName === "Unknown") {
+                            var closedEventsTemplate = new InfoTemplate("Closed Event", closedTemplateData);
+                            feature.setInfoTemplate(closedEventsTemplate);
+                        }
+                        if (layerName === "Tier 4" || layerName === "Tier 3") {
+                            var tier4EventsTemplate = new InfoTemplate("Closed Event", tier4TemplateData);
+                            feature.setInfoTemplate(tier4EventsTemplate);
+                        }
+                        return feature;
+                    });
+
+                })
+                map.infoWindow.setFeatures([deferedIdentify]);
+                map.infoWindow.show(evt.mapPoint);
+            });
+            
+        });
+    </script>
+</head>
+<body>
+    <div id="mapDiv"></div>
+</body>
+</html>
