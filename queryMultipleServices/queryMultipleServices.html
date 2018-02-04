@@ -1,0 +1,88 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no" />
+    <title>Query Multiple Map Services</title>
+    <link rel="stylesheet" href="https://js.arcgis.com/3.19/esri/css/esri.css">
+    <style>
+        html, body, #map {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <script src="https://js.arcgis.com/3.19/"></script>
+    <script>
+        /*--  Queries URLS--*/
+        var url_modelFlowPaths = "https://gis.colorado.gov/public/rest/services/OIT/BaseData/MapServer/0";
+        var url_socioDemographic = "https://www.cohealthmaps.dphe.state.co.us/arcgis/rest/services/COMMUNITY_INCLUSION/COLORADO_COMMUNITY_INCLUSION_SOCIODEMOGRAPHIC_DISABILITY/MapServer/1";
+        require([
+        "esri/map",
+        "dojo/on",
+        "esri/tasks/IdentifyTask",
+        "esri/tasks/IdentifyParameters",
+        "esri/tasks/query",
+        "esri/tasks/QueryTask",
+        "dojo/parser",
+        "dojo/domReady!"
+        ], function (
+        Map,
+        on,
+        IdentifyTask,
+        IdentifyParameters,
+        Query,
+        QueryTask,
+        parser,
+        declare
+        ) {
+            parser.parse();
+            /*-- Reference dictionary --*/
+            var querySearchDictionary = [
+                 { name: "mapservice1", url: url_modelFlowPaths },
+                 { name: "mapservice2", url: url_socioDemographic }
+            ];
+            // Creates a simple map
+            map = new Map("map", {
+                basemap: "topo",  //For full list of pre-defined basemaps, navigate to http://arcg.is/1JVo6Wd
+                center: [-107.205, 38.944], // longitude, latitude
+                zoom: 7
+            });
+            /*-- On Map click query using cursor coordinates... To expand on this and to have consistant
+            results asynchronous handling of the queries will need to be added, using promises.  This sampele
+            is to just demonstrate how to iterate through multiple services.--*/
+            map.on("click", function queryServices(evt) {
+                querySearch = new Query();
+                querySearch.outFields = ["*"];
+                querySearch.geometry = evt.mapPoint;
+                executeSearch();
+                function executeSearch() {  // Query mapservices to see what exists in search area
+                    // Will go through each of the querySearchDictionary object array that we defined earlier
+                    querySearchDictionary.forEach(function (dictionary) {
+                        console.log(dictionary.url) // Debugging purposes to keep track of what is being searched
+                        var querySearchTask = new QueryTask(dictionary.url); // Define a new query task inside of forEach, will use current iteration to run the search
+                        //Execute Query Tasks
+                        var qs = querySearchTask.execute(querySearch, function (results) {
+                            if (results.features.length === 0) {
+                                console.log("no results"); // if no results found, do something
+                            }
+                            else if (results.features.length > 0) {
+                                console.log("results found OBJECTID: " + results.features[0].attributes.OBJECTID); // if results found, do something
+                            }
+                        });
+                    });
+                }
+            });
+        });
+    </script>
+</head>
+<body>
+    <div style="height:175px; width:100%;">
+        <h4>Use console log to view results.</h4>
+        <p>Will iterate through object array and return objectIDS when there is a response.</p>
+        <p>Simple example of how to query multiple services with one event, if you need to do actual work with results utlize Promises to handle results.</p>
+    </div>
+    <div id="map"></div>
+</body>
+</html>
