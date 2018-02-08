@@ -16,17 +16,35 @@
     <script>
         var map;
 
-        require(["esri/map", "dojo/domReady!"], function (Map) {
+        require(["esri/map", "esri/tasks/query", "esri/tasks/QueryTask", "dojo/domReady!"], function (Map, Query, QueryTask) {
             map = new Map("map", {
                 basemap: "topo",  //For full list of pre-defined basemaps, navigate to http://arcg.is/1JVo6Wd
                 center: [-107.205, 38.944], // longitude, latitude
                 zoom: 7
             });
+            var queryURL = "https://gis.colorado.gov/oit/rest/services/OIT/FeatureServices_Public/MapServer/1";
+            var populateQuery = new Query();
+            populateQuery.outFields = ['*'];
+            populateQuery.returnDistinctValues = true;
+            populateQuery.where = "1=1";
+            var populateQueryTask = new QueryTask(queryURL);
+            populateQueryTask.execute(populateQuery, function (results) {
+                //push data to memStore or array
+                console.log(results.fieldAliases);
+            }, function (error) {
+                console.log(error)
+            });
+            // 
         });
+        
     </script>
 </head>
 
 <body>
+   <div style="width:100px; height:100px;">
+       <select style="width:100%;">
+       </select>
+   </div>
     <div id="map"></div>
 </body>
 </html>
