@@ -15,8 +15,8 @@
     <script src="https://js.arcgis.com/3.23/"></script>
     <script>
         var map;
-
-        require(["esri/map", "esri/tasks/query", "esri/tasks/QueryTask", "dojo/domReady!"], function (Map, Query, QueryTask) {
+        var fieldNames = [];
+        require(["esri/map", "esri/tasks/query", "esri/tasks/QueryTask", "dojo/dom", "dojo/dom-construct", "dojo/domReady!"], function (Map, Query, QueryTask, dom, domConstruct) {
             map = new Map("map", {
                 basemap: "topo",  //For full list of pre-defined basemaps, navigate to http://arcg.is/1JVo6Wd
                 center: [-107.205, 38.944], // longitude, latitude
@@ -30,11 +30,18 @@
             var populateQueryTask = new QueryTask(queryURL);
             populateQueryTask.execute(populateQuery, function (results) {
                 //push data to memStore or array
-                console.log(results.fieldAliases);
+                console.log(results.fields);
+                
+
+                results.fields.forEach(function (field) {
+                    console.log("Pushing: " + field)
+                    fieldNames.push(field)
+                })
             }, function (error) {
                 console.log(error)
             });
-            // 
+            //
+            console.log(fieldNames)
         });
         
     </script>
