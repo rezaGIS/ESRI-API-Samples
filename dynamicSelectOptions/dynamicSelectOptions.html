@@ -1,0 +1,78 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no" />
+    <title>Simple Dyanmic Select Option Boxes</title>
+    <link rel="stylesheet" href="https://js.arcgis.com/3.23/esri/css/esri.css">
+    <style>
+        html, body, #map {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+    <script src="https://js.arcgis.com/3.23/"></script>
+    <script>
+        // I'd recommend using promises to ensure all queries are finished before allowing users to interact
+        // with the drop down boxes.  With larger datasets to query, the async nature of the queryTask will cause
+        // timing issues.  This demo was just intended to show how to create a simple dynamic select with options.
+        var map;
+        var fieldNames = []; // Store data from forEach pushing field names
+        require(["esri/map",
+            "esri/tasks/query",
+            "esri/tasks/QueryTask",
+            "dojo/dom",
+            "dojo/dom-construct",
+            "dojo/domReady!"],
+            function (Map,
+                Query,
+                QueryTask,
+                dom,
+                domConstruct) {
+                // Set up initial map
+                map = new Map("map", {
+                    basemap: "topo",  //For full list of pre-defined basemaps, navigate to http://arcg.is/1JVo6Wd
+                    center: [-107.205, 38.944], // longitude, latitude
+                    zoom: 7
+                });
+                // Define query
+                var queryURL = "https://gis.colorado.gov/oit/rest/services/OIT/FeatureServices_Public/MapServer/1";
+                var populateQuery = new Query();
+                populateQuery.outFields = ['*'];
+                populateQuery.where = "1=1";
+                var populateQueryTask = new QueryTask(queryURL);
+                // Execute query
+                populateQueryTask.execute(populateQuery, function (results) {
+                    //Iterate through each result, since it comes back in an object array you can use forEach here instead of for loop, less code
+                    results.fields.forEach(function (field) {
+                        console.log("Pushing: " + field.name); // For my simple mind to keep track while troubleshooting
+                        fieldNames.push(field.name); // Not needed for this purpose, but to build using promises you'll want to chain using pushed array
+                        // DOM Add on the fly
+                        var addOptionDom = document.createElement("option"); // Will be used later
+                        addOptionDom.text = field.name; // Adds text to option
+                        document.getElementById("addDocument").add(addOptionDom); // Finds addDocument select ID and adds in Option with text we added.
+                        // Dom Construct on the fly
+                        domConstruct.create("option", { innerHTML: field.name }, "addDOM");
+                    })
+                }, function (error) { // catch errors
+                    console.log(error)
+                });
+                // Why do this?
+                // Using this method you can create queries for the user to avoid improper searches / user error proof your app.
+                // With out having to hard code inputs, as the fields/mapservice change so will your queries.
+            });
+    </script>
+</head>
+<body>
+    <div style="width:100px; height:100px;">
+        <p>Added using document / dom</p>
+        <select id="addDocument" style="width:100%;"></select>
+    </div>
+    <div style="width:100px; height:100px;">
+        <p>Created using domConstruct</p>
+        <select id="addDOM" style="width:100%;"></select>
+    </div>
+    <div id="map"></div>
+</body>
+</html>

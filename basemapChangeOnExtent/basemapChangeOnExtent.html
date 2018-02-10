@@ -1,0 +1,58 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no" />
+    <title>Change Basemap on Zoom Extent</title>
+    <link rel="stylesheet" href="https://js.arcgis.com/3.23/esri/css/esri.css">
+    <style>
+        html, body, #map {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+    <script src="https://js.arcgis.com/3.23/"></script>
+    <script>
+        var map;
+
+        require(["esri/map", "dojo/domReady!"], function (Map) {
+            map = new Map("map", {
+                basemap: "topo",  //For full list of pre-defined basemaps, navigate to http://arcg.is/1JVo6Wd
+                center: [-107.205, 38.944], // longitude, latitude
+                zoom: 7,
+                maxZoom: 10,
+                minZoom: 7
+            });
+                //Switch basemap on zoom level
+                map.on("zoom-end", function () { //needs to be on zoom-end or will be laggy/buggy
+                    let tempScale;
+                    tempScale = map.getZoom();
+                    if (tempScale === 7) {
+                        map.setBasemap("topo");
+                    }
+                    else if (tempScale === 8) {
+                        map.setBasemap("hybrid");
+                    }
+                    else if (tempScale === 9) {
+                        map.setBasemap("dark-gray-vector");
+                    }
+                    else if (tempScale === 10) {
+                        map.setBasemap("streets");
+                    }
+                   
+                });
+            // Quick little display of what zoom and basemap is active
+                map.on("click", function () {
+                    let tempScale = map.getZoom();
+                    let currentBasemap = map.getBasemap();
+                    alert("Current zoom is: " + tempScale + " and the basemap is: " + currentBasemap + ".")
+                })
+        });
+    </script>
+</head>
+
+<body>
+    <div id="map"></div>
+</body>
+</html>
