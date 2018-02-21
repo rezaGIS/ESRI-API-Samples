@@ -15,4 +15,4 @@ hard coded into the submission.</li>
 <li><a href="https://rezagis.github.io/ESRI-API-Samples/IdentifyMultipleTemplates.html">Identify Multiple w/ Templates </a> - Example of how use mutliple teplates on identifying multiple layers in one service.</li>
 
 # domConstruct examples
-<li><a href="https://rezagis.github.io/ESRI-API-Samples/queryMultipledomConstructFields.html">Dynamic Fields from Service</a> - Example of how to create dynamic option selects with a mapservice.</li>
+<li><a href="https://rezagis.github.io/ESRI-API-Samples/domConstructFields.html">Dynamic Fields from Service</a> - Example of how to create dynamic option selects with a mapservice.</li>
